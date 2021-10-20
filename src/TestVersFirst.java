@@ -17,68 +17,63 @@ public class TestVersFirst {
         //Значения целевой функции
         String targetFuncStr = "10 12 8";
         ArrayList<Double> targetFunc = parseArrayFromString(targetFuncStr);
+
         //Маскимальная прибыль
         Double profit = 0.0;
-
-        //Проверка оптимальности плана
-        for (Double elemet : targetFunc){
-            if (elemet < 0){
-                System.out.println("План не оптимальный - рассчитываем");
-
-            }
-            else{
-                System.out.println("План оптимальный");
-                //нужно вывести значения базиса и сами базисы
-            }
-        }
-
-
-
-
-
         multiplTargetFunc(targetFunc);
         addForTargetFuncAdditionalElement(yCount, targetFunc);
 
-        //Из targetFunc находим наименьшее число
-        //В indexOfColumn записывается индекс разрешающего столбца
-        int indexOfColumn = findMinElementFromBasis(targetFunc);
-        //Вычисление базиса
-        ArrayList<Double> basis = calculateBasis(result, fullMatrix, indexOfColumn);
+        int[] namesBasis = nameOfBasis(yCount);
 
-        //Находим минимальное число из базиса (если число =0 или < 0 его не учитываем)
-        //В indexOfRow записывается индекс разрешающего столбца
-        int indexOfRow = findMinElemenInBasis(basis);
+        //Проверка оптимальности плана
+            while (checkIsNegativeElements(targetFunc)){
+                //Из targetFunc находим наименьшее число
+                //В indexOfColumn записывается индекс разрешающего столбца
+                int indexOfColumn = findMinElementFromBasis(targetFunc);
 
-        double elementOfRowColumn = fullMatrix.get(indexOfRow).get(indexOfColumn);
+                //Вычисление базиса
+                ArrayList<Double> basis = calculateBasis(result, fullMatrix, indexOfColumn);
 
-        //Очищаем базис, так как он будет высчитываться снова
-        basis.clear();
+                //Находим минимальное число из базиса (если число =0 или < 0 его не учитываем)
+                //В indexOfRow записывается индекс разрешающего столбца
+                int indexOfRow = findMinElemenInBasis(basis);
 
-        //Перезаполняем матрицу с дополнительными переменными новыми значениями
-        //для разрешающей строки делаем вычисления - каждый элемент разрешающей строки делим на разрешающий элемент -fullMatrix.get(indexOfRow).get(indexOfColumn)
-        ArrayList<Double> fullRow = calculateAllowRow(fullMatrix, indexOfRow, elementOfRowColumn, result);
+                namesBasis[indexOfRow] = indexOfColumn + 1;
 
-        //Вернем последний элемент в массив result и удалим его из fullRow
-        result.set(indexOfRow, fullRow.get(fullRow.size()-1));
-        fullRow.remove(fullRow.size() -1);
+                double elementOfRowColumn = fullMatrix.get(indexOfRow).get(indexOfColumn);
 
-        //Перезаписываем в главной матрице с доп переменными разрешающую строку новыми значениями
-        fullMatrix = rewriteMainMatrix(fullMatrix, indexOfRow, fullRow, indexOfColumn, result);
+                //Очищаем базис, так как он будет высчитываться снова
+                basis.clear();
 
-        //Вычисляем максимальную прибыль
-        profit += result.get(indexOfRow) * targetFunc.get(indexOfColumn) * -1;
+                //Перезаполняем матрицу с дополнительными переменными новыми значениями
+                //для разрешающей строки делаем вычисления - каждый элемент разрешающей строки делим на разрешающий элемент -fullMatrix.get(indexOfRow).get(indexOfColumn)
+                ArrayList<Double> fullRow = calculateAllowRow(fullMatrix, indexOfRow, elementOfRowColumn, result);
 
-        //Вычисляем новые значения для целевой функции
-        targetFunc = rewriteTargetFunc(targetFunc, fullRow, indexOfColumn);
+                //Вернем последний элемент в массив result и удалим его из fullRow
+                result.set(indexOfRow, fullRow.get(fullRow.size()-1));
+                fullRow.remove(fullRow.size() -1);
 
-        
+                //Перезаписываем в главной матрице с доп переменными разрешающую строку новыми значениями
+                fullMatrix = rewriteMainMatrix(fullMatrix, indexOfRow, fullRow, indexOfColumn, result);
 
-        System.out.println(profit);
-        System.out.println(targetFunc);
-        System.out.println(fullMatrix);
-        System.out.println(result);
+                //Вычисляем максимальную прибыль
+                profit += result.get(indexOfRow) * targetFunc.get(indexOfColumn) * -1;
+
+                //Вычисляем новые значения для целевой функции
+                targetFunc = rewriteTargetFunc(targetFunc, fullRow, indexOfColumn);
+
+            }
+
+            for (int i = 0; i < namesBasis.length; i++){
+                if (namesBasis[i] < 0){
+                    System.out.println("y" + i + " = " + result.get(i));
+                }
+                else {
+                    System.out.println("x" + namesBasis[i] + " = " + result.get(i));
+                }
+            }
+        System.out.println("Максимальная прибыль: " + profit);
     }
-
 
     /**
      * Метод для Заполнение матрицы дополнительными переменными
@@ -100,6 +95,36 @@ public class TestVersFirst {
             fullMatrix.add(fullRow);
         }
         return fullMatrix;
+    }
+
+    /**
+     * Будут храниться имена базисов для вывода ответа
+     * @param yCount
+     * @return
+     */
+
+    public static int[] nameOfBasis(int yCount){
+        int[] nameOfBasis = new int[yCount];
+        for (int i = 0; i < nameOfBasis.length; i++){
+            nameOfBasis[i] = -1;
+        }
+        return nameOfBasis;
+    }
+
+    /**
+     * Проверка отрицательных элементов в целевой функции
+     * @param targetFunc
+     * @return
+     */
+    public static boolean checkIsNegativeElements(ArrayList<Double> targetFunc){
+        boolean isNegative = false;
+        for (int i = 0; i < targetFunc.size(); i++) {
+            if (targetFunc.get(i) < 0) {
+                isNegative = true;
+                break;
+            }
+        }
+        return isNegative;
     }
 
     /**
